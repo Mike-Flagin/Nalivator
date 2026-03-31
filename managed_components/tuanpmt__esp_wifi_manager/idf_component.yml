@@ -1,0 +1,22 @@
+dependencies:
+  espressif/mdns: ^1.2
+  idf:
+    version: '>=5.0.0'
+  tuanpmt/esp_bus: ^1.0.3
+description: WiFi Manager component with multi-network support, auto-reconnect, SoftAP
+  captive portal, and REST API configuration
+documentation: https://github.com/tuanpmt/esp_wifi_manager/tree/main/docs
+issues: https://github.com/tuanpmt/esp_wifi_manager/issues
+license: MIT
+maintainers:
+- tuanpmt
+repository: https://github.com/tuanpmt/esp_wifi_manager.git
+targets:
+- esp32
+- esp32s2
+- esp32s3
+- esp32c3
+- esp32c6
+- esp32h2
+url: https://github.com/tuanpmt/esp_wifi_manager
+version: 1.1.0

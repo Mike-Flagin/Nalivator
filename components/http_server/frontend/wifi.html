@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nalivator - WiFi Setup</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; text-align: center; }
+        .section { margin-bottom: 20px; }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-bottom: 8px;
+        }
+        button.secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .net-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .net-item {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .net-item:hover { background: #f1f5f9; }
+        .rssi { font-size: 0.8rem; color: #64748b; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+        .success { background: #dcfce7; color: #166534; display: block; }
+        .error { background: #fee2e2; color: #991b1b; display: block; }
+        hr { border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Wi-Fi Configuration</h1>
+
+    <div class="section">
+        <button id="scanBtn" onclick="scanWifi()">Scan for Networks</button>
+        <div id="networks" class="net-list">
+            <div style="padding:12px; color:#94a3b8;">No networks scanned yet.</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <input type="text" id="ssid" placeholder="Network Name (SSID)">
+        <input type="password" id="pass" placeholder="Password">
+        <button id="connBtn" onclick="connectWifi()">Connect</button>
+        <div id="status" class="status"></div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+        <button class="secondary" id="skipBtn" onclick="skipConnection()">Continue Without Wi-Fi</button>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/wifi';
+
+    async function scanWifi() {
+        const btn = document.getElementById('scanBtn');
+        const list = document.getElementById('networks');
+        btn.disabled = true;
+        list.innerHTML = '<div style="padding:12px;">Scanning...</div>';
+
+        try {
+            const response = await fetch(`${API_BASE}/scan`);
+            const data = await response.json();
+            list.innerHTML = '';
+            if (data.networks && data.networks.length > 0) {
+                data.networks.forEach(net => {
+                    const div = document.createElement('div');
+                    div.className = 'net-item';
+                    div.innerHTML = `<span>${net.ssid}</span><span class="rssi">${net.rssi} dBm</span>`;
+                    div.onclick = () => document.getElementById('ssid').value = net.ssid;
+                    list.appendChild(div);
+                });
+            } else {
+                list.innerHTML = '<div style="padding:12px;">No networks found.</div>';
+            }
+        } catch (err) {
+            showStatus('Scan failed.', false);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function connectWifi() {
+        const ssid = document.getElementById('ssid').value;
+        const password = document.getElementById('pass').value;
+        const btn = document.getElementById('connBtn');
+        if (!ssid) return showStatus('Please enter an SSID', false);
+
+        btn.disabled = true;
+        showStatus('Connecting...', true);
+
+        try {
+            // Save credentials
+            await fetch(`${API_BASE}/networks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid, password, priority: 1 })
+            });
+
+            // Trigger connect
+            const res = await fetch(`${API_BASE}/connect`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid })
+            });
+
+            const data = await res.json();
+
+            if (data.status === "ok") {
+                showStatus('Success! Redirecting to main page...', true);
+                setTimeout(() => { window.location.href = "/"; }, 1500);
+            } else {
+                showStatus('Connection failed: ' + (data.msg || 'Unknown error'), false);
+                btn.disabled = false;
+            }
+        } catch (e) {
+            showStatus('Error: Check if ESP is still in AP mode', false);
+            btn.disabled = false;
+        }
+    }
+
+    async function skipConnection() {
+        const btn = document.getElementById('skipBtn');
+        btn.disabled = true;
+        showStatus('Skipping setup...', true);
+
+        try {
+            const res = await fetch(`${API_BASE}/without_connection`, {
+                method: 'POST',
+                redirect: 'follow' // This tells the browser to follow the 302 redirect automatically
+            });
+
+            if (res.redirected) {
+                window.location.href = res.url;
+            }
+        } catch (err) {
+            // Even if fetch "fails" due to the AP closing, the redirect might still happen
+            showStatus('Redirecting...', true);
+        }
+    }
+
+    function showStatus(msg, isSuccess) {
+        const el = document.getElementById('status');
+        el.innerText = msg;
+        el.className = `status ${isSuccess ? 'success' : 'error'}`;
+    }
+</script>
+
+</body>
+</html>

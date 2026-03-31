@@ -1,0 +1,80 @@
+{
+  "pumps": [
+    {
+      "pumpNumber": 1,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 2,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 3,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 4,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 5,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 6,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 7,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 8,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 9,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    },
+    {
+      "pumpNumber": 10,
+      "flowrate": 1200,
+      "ingredient": "",
+      "inverse": false,
+      "volumeToSplitter": 10
+    }
+  ],
+  "servoPositions": [120, 60, 0, 180],
+  "volumeAfterSplitter": 10,
+  "ledStandbyColor": [0, 0, 0],
+  "ledWaitingColor": [255, 0, 0],
+  "ledPouringColor": [255, 255, 0],
+  "ledPouredColor": [0, 255, 0]
+}
