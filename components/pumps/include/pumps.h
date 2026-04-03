@@ -13,11 +13,11 @@ typedef enum {
  	BACKWARD = -1,
 } direction_t;
 
-typedef struct Pump
+typedef struct
 {
     uint8_t number;
     gpio_num_t pin;
-    //IngredientName ingredient;
+    uint16_t ingredient_id;
     uint16_t flowrate;
     bool inverse;
     uint8_t volume_to_splitter;
@@ -42,9 +42,10 @@ void init_pumps();
  *
  * @param flowrates Array of flowrates for each pump (size PUMPS_AMOUNT).
  * @param inverses Array of inverse flags for each pump (size PUMPS_AMOUNT).
+ * @param ingredients
  * @param volumes_to_splitter Array of volumes to splitter for each pump (size PUMPS_AMOUNT).
  */
-void configure_pumps(const uint8_t* flowrates, const bool* inverses, const uint8_t* volumes_to_splitter);
+void configure_pumps(const uint16_t* flowrates, const bool* inverses, const uint16_t* ingredients, const uint8_t* volumes_to_splitter);
 
 /**
  * @brief Enables a specific pump in the given direction.

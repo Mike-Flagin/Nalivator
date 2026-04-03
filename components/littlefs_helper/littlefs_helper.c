@@ -3,6 +3,7 @@
 #include <esp_littlefs.h>
 #include <esp_log.h>
 #include <stdlib.h>
+#include <sys/unistd.h>
 #include <sys/_default_fcntl.h>
 
 #include "../../include/values.h"
@@ -17,6 +18,7 @@ void littlefs_mount()
         .partition_label = "storage",
         .format_if_mount_failed = true,
         .dont_mount = false,
+        .read_only = false
     };
 
     const esp_err_t ret = esp_vfs_littlefs_register(&conf);
@@ -40,7 +42,6 @@ void littlefs_mount()
     ESP_LOGI(TAG, "LittleFS mounted successfully");
 }
 
-
 FILE* open_file_to_read(const char* file_name)
 {
     char path[LITTLEFS_MAX_PATH_LENGTH];
@@ -61,15 +62,7 @@ FILE* open_file_to_read(const char* file_name)
     return f;
 }
 
-void close_file(FILE* file)
-{
-    if (file != NULL)
-    {
-        fclose(file);
-    }
-}
-
-FILE* read_from_file(const char* file_name)
+FILE* open_file_to_write(const char* file_name)
 {
     char path[LITTLEFS_MAX_PATH_LENGTH];
     if (snprintf(path, sizeof(path), "%s/%s", LITTLEFS_BASE_PATH, file_name) >= sizeof(path))
@@ -85,5 +78,44 @@ FILE* read_from_file(const char* file_name)
         ESP_LOGE(TAG, "Failed to open file for writing");
         return NULL;
     }
+    ESP_LOGI(TAG, "file opened for writing");
     return f;
+}
+
+bool delete_file(const char* file_name)
+{
+    char path[LITTLEFS_MAX_PATH_LENGTH];
+    if (snprintf(path, sizeof(path), "%s/%s", LITTLEFS_BASE_PATH, file_name) >= sizeof(path))
+    {
+        ESP_LOGE(TAG, "File path too long");
+        return NULL;
+    }
+    ESP_LOGI(TAG, "Deleting file");
+    return !unlink(path);
+}
+
+bool rename_file(const char* file_name, const char* new_file_name)
+{
+    char old_path[LITTLEFS_MAX_PATH_LENGTH];
+    if (snprintf(old_path, sizeof(old_path), "%s/%s", LITTLEFS_BASE_PATH, file_name) >= sizeof(old_path))
+    {
+        ESP_LOGE(TAG, "File path too long");
+        return NULL;
+    }
+    char new_path[LITTLEFS_MAX_PATH_LENGTH];
+    if (snprintf(new_path, sizeof(new_path), "%s/%s", LITTLEFS_BASE_PATH, new_file_name) >= sizeof(new_path))
+    {
+        ESP_LOGE(TAG, "File path too long");
+        return NULL;
+    }
+    ESP_LOGI(TAG, "Renaming file");
+    return !rename(old_path, new_path);
+}
+
+void close_file(FILE* file)
+{
+    if (file != NULL)
+    {
+        fclose(file);
+    }
 }

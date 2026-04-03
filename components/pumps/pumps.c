@@ -1,5 +1,6 @@
 #include "pumps.h"
 
+#include <string.h>
 #include <driver/gpio.h>
 
 #include "esp_system.h"
@@ -56,7 +57,7 @@ void init_pumps()
             pin = GPIO_NUM_NC;
         }
         pumps[i].number = i;
-        pumps[i].pin = pin;
+        pumps[i].pin = pin;;
     }
     const gpio_config_t cfg = {
         .pin_bit_mask = 1 << PUMP_1_PIN | 1 << PUMP_2_PIN | 1 << PUMP_3_PIN | 1 << PUMP_4_PIN | 1ULL << PUMP_5_PIN
@@ -67,14 +68,17 @@ void init_pumps()
         .intr_type = GPIO_INTR_DISABLE
     };
     ESP_ERROR_CHECK(gpio_config(&cfg));
+
+
 }
 
-void configure_pumps(const uint8_t* flowrates, const bool* inverses, const uint8_t* volumes_to_splitter)
+void configure_pumps(const uint16_t* flowrates, const bool* inverses, const uint16_t* ingredients, const uint8_t* volumes_to_splitter)
 {
     for (uint8_t i = 0; i < PUMPS_AMOUNT; i++)
     {
         pumps[i].flowrate = flowrates[i];
         pumps[i].inverse = inverses[i];
+        pumps[i].ingredient_id = ingredients[i];
         pumps[i].volume_to_splitter = volumes_to_splitter[i];
     }
 }

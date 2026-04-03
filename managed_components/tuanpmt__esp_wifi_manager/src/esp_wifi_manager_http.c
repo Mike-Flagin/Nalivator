@@ -795,6 +795,7 @@ esp_err_t wifi_mgr_http_init(void)
     // Create httpd if not provided
     if (!g_wifi_mgr->httpd) {
         httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+        config.stack_size = 4096;
         config.uri_match_fn = httpd_uri_match_wildcard;
         config.max_uri_handlers = 32;  // API(18) + WebUI(3) + Captive(8) + reserve
 
