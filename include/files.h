@@ -8,5 +8,8 @@
 #define TEMP_CONFIG_PATH "config.json.tmp"
 #define INGREDIENTS_PATH "ingredients.json"
 #define TEMP_INGREDIENTS_PATH "ingredients.json.tmp"
+#define RECIPES_PATH "recipes.json"
+#define TEMP_RECIPES_PATH "recipes.json.tmp"
+#define RECIPES_INDEX_PATH "recipes.idx"
 
 #endif //NALIVATOR_FILES_H

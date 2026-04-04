@@ -51,8 +51,28 @@ FILE* open_file_to_read(const char* file_name)
         return NULL;
     }
 
-    ESP_LOGI(TAG, "Opening file");
+    ESP_LOGI(TAG, "Opening file %s", file_name);
     FILE* f = fopen(path, "r");
+    if (f == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for reading");
+        return NULL;
+    }
+    ESP_LOGI(TAG, "file opened for reading");
+    return f;
+}
+
+FILE* open_file_to_read_binary(const char* file_name)
+{
+    char path[LITTLEFS_MAX_PATH_LENGTH];
+    if (snprintf(path, sizeof(path), "%s/%s", LITTLEFS_BASE_PATH, file_name) >= sizeof(path))
+    {
+        ESP_LOGE(TAG, "File path too long");
+        return NULL;
+    }
+
+    ESP_LOGI(TAG, "Opening file %s", file_name);
+    FILE* f = fopen(path, "rb");
     if (f == NULL)
     {
         ESP_LOGE(TAG, "Failed to open file for reading");
@@ -71,8 +91,28 @@ FILE* open_file_to_write(const char* file_name)
         return NULL;
     }
 
-    ESP_LOGI(TAG, "Opening file");
+    ESP_LOGI(TAG, "Opening file %s", file_name);
     FILE* f = fopen(path, "w");
+    if (f == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for writing");
+        return NULL;
+    }
+    ESP_LOGI(TAG, "file opened for writing");
+    return f;
+}
+
+FILE* open_file_to_write_binary(const char* file_name)
+{
+    char path[LITTLEFS_MAX_PATH_LENGTH];
+    if (snprintf(path, sizeof(path), "%s/%s", LITTLEFS_BASE_PATH, file_name) >= sizeof(path))
+    {
+        ESP_LOGE(TAG, "File path too long");
+        return NULL;
+    }
+
+    ESP_LOGI(TAG, "Opening file %s", file_name);
+    FILE* f = fopen(path, "wb");
     if (f == NULL)
     {
         ESP_LOGE(TAG, "Failed to open file for writing");

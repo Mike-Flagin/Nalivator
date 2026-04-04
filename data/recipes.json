@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1,
+    "name": "Кровавая Мэри",
+    "ingredients": [
+      { "ingredientId": 1, "amount": 50 },
+      { "ingredientId": 3, "amount": 100 }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Отвертка",
+    "ingredients": [
+      { "ingredientId": 1, "amount": 50 },
+      { "ingredientId": 2, "amount": 150 }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Джин-Тоник",
+    "ingredients": [
+      { "ingredientId": 4, "amount": 50 },
+      { "ingredientId": 5, "amount": 150 }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Текила Санрайз",
+    "ingredients": [
+      { "ingredientId": 6, "amount": 50 },
+      { "ingredientId": 2, "amount": 120 },
+      { "ingredientId": 7, "amount": 20 }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Белый Русский",
+    "ingredients": [
+      { "ingredientId": 1, "amount": 50 },
+      { "ingredientId": 8, "amount": 30 },
+      { "ingredientId": 9, "amount": 30 }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Куба Либре",
+    "ingredients": [
+      { "ingredientId": 10, "amount": 50 },
+      { "ingredientId": 11, "amount": 120 },
+      { "ingredientId": 12, "amount": 10 }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Виски Кола",
+    "ingredients": [
+      { "ingredientId": 13, "amount": 50 },
+      { "ingredientId": 11, "amount": 150 }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Морской Бриз",
+    "ingredients": [
+      { "ingredientId": 1, "amount": 40 },
+      { "ingredientId": 14, "amount": 80 },
+      { "ingredientId": 2, "amount": 30 }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Яблочный Пирог",
+    "ingredients": [
+      { "ingredientId": 13, "amount": 40 },
+      { "ingredientId": 15, "amount": 120 },
+      { "ingredientId": 16, "amount": 10 }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "Чистая Водичка",
+    "ingredients": [
+      { "ingredientId": 0, "amount": 200 }
+    ]
+  }
+]

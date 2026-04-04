@@ -5,7 +5,9 @@
 
 void littlefs_mount();
 FILE* open_file_to_read(const char* file_name);
+FILE* open_file_to_read_binary(const char* file_name);
 FILE* open_file_to_write(const char* file_name);
+FILE* open_file_to_write_binary(const char* file_name);
 bool delete_file(const char* file_name);
 bool rename_file(const char* file_name, const char* new_file_name);
 void close_file(FILE* file);

@@ -13,15 +13,18 @@
 #include "nvs_flash.h"
 #include "esp_wifi_manager.h"
 #include "esp_bus.h"
+#include "esp_ota_ops.h"
 #include "esp_wifi.h"
-#include "files.h"
-#include "uris.h"
+#include "tasks.h"
+#include "../include/files.h"
+#include "../include/uris.h"
 #include "values.h"
 #include "wifi_settings.h"
 
 static const char TAG[] = "main";
 
-static void init_config(const char* path) {
+static void init_config(const char* path)
+{
     ESP_LOGI(TAG, "Attempting to load config: %s", path);
 
     FILE* f = open_file_to_read(path);
@@ -29,35 +32,43 @@ static void init_config(const char* path) {
     cJSON* root = NULL;
     bool success = false;
 
-    if (f != NULL) {
+    if (f != NULL)
+    {
         fseek(f, 0, SEEK_END);
         const long file_size = ftell(f);
         fseek(f, 0, SEEK_SET);
 
-        if (file_size > 0) {
+        if (file_size > 0)
+        {
             json_buffer = malloc(file_size + 1);
-            if (json_buffer != NULL) {
+            if (json_buffer != NULL)
+            {
                 const size_t bytes_read = fread(json_buffer, 1, file_size, f);
                 json_buffer[bytes_read] = '\0';
 
                 root = cJSON_Parse(json_buffer);
-                if (root != NULL) {
+                if (root != NULL)
+                {
                     const cJSON* pumps_json = cJSON_GetObjectItem(root, PUMPS_JSON_KEY);
-                    if (cJSON_IsArray(pumps_json)) {
+                    if (cJSON_IsArray(pumps_json))
+                    {
                         // Stack allocation for the configuration arrays
                         uint16_t flowrates[PUMPS_AMOUNT] = {0};
                         bool inverses[PUMPS_AMOUNT] = {false};
                         uint16_t ingredients[PUMPS_AMOUNT] = {0};
                         uint8_t volumes_to_splitter[PUMPS_AMOUNT] = {0};
 
-                        for (int i = 0; i < PUMPS_AMOUNT; i++) {
+                        for (int i = 0; i < PUMPS_AMOUNT; i++)
+                        {
                             cJSON* p = cJSON_GetArrayItem(pumps_json, i);
                             if (!p) continue;
 
                             flowrates[i] = (uint16_t)cJSON_GetNumberValue(cJSON_GetObjectItem(p, FLOWRATE_JSON_KEY));
                             inverses[i] = cJSON_IsTrue(cJSON_GetObjectItem(p, INVERSE_JSON_KEY));
-                            ingredients[i] = (uint16_t)cJSON_GetNumberValue(cJSON_GetObjectItem(p, INGREDIENT_JSON_KEY));
-                            volumes_to_splitter[i] = (uint8_t)cJSON_GetNumberValue(cJSON_GetObjectItem(p, VOLUME_TO_SPLITTER_JSON_KEY));
+                            ingredients[i] = (uint16_t)
+                                cJSON_GetNumberValue(cJSON_GetObjectItem(p, INGREDIENT_JSON_KEY));
+                            volumes_to_splitter[i] = (uint8_t)cJSON_GetNumberValue(
+                                cJSON_GetObjectItem(p, VOLUME_TO_SPLITTER_JSON_KEY));
                         }
 
                         configure_pumps(flowrates, inverses, ingredients, volumes_to_splitter);
@@ -70,19 +81,26 @@ static void init_config(const char* path) {
 
                         // Parse volumeAfterSplitter
                         // TODO: implement volume after splitter logic
-                        const cJSON* volume_after_splitter_json = cJSON_GetObjectItem(root, VOLUME_AFTER_SPLITTER_JSON_KEY);
+                        const cJSON* volume_after_splitter_json = cJSON_GetObjectItem(
+                            root, VOLUME_AFTER_SPLITTER_JSON_KEY);
 
 
                         // Parse LED colors arrays
                         // TODO: implement color logic
                         success = true;
-                    } else {
+                    }
+                    else
+                    {
                         ESP_LOGW(TAG, "Pumps array missing in %s", path);
                     }
-                } else {
+                }
+                else
+                {
                     ESP_LOGE(TAG, "JSON parse error in %s", path);
                 }
-            } else {
+            }
+            else
+            {
                 ESP_LOGE(TAG, "Memory allocation failed for %s", path);
             }
         }
@@ -94,14 +112,20 @@ static void init_config(const char* path) {
     if (json_buffer) free(json_buffer);
 
     // Final result check
-    if (success) {
+    if (success)
+    {
         ESP_LOGI(TAG, "Configuration applied from %s", path);
-    } else {
+    }
+    else
+    {
         // Prevent infinite recursion if default also fails
-        if (strcmp(path, DEFAULT_CONFIG_PATH) != 0) {
+        if (strcmp(path, DEFAULT_CONFIG_PATH) != 0)
+        {
             ESP_LOGW(TAG, "Main config failed. Falling back to default...");
             init_config(DEFAULT_CONFIG_PATH);
-        } else {
+        }
+        else
+        {
             ESP_LOGE(TAG, "Default configuration failed to load!");
         }
     }
@@ -112,6 +136,9 @@ void app_main(void)
     // Disable pumps
     init_pumps();
     disable_all_pumps();
+
+    // Initialize tasks
+    init_tasks();
 
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -178,8 +205,6 @@ void app_main(void)
     }
     esp_wifi_set_ps(WIFI_PS_NONE);
 
-
-
     // Initialize http server
     init_server(wifi_manager_get_httpd());
 
@@ -197,5 +222,5 @@ void app_main(void)
     littlefs_mount();
     init_config(CONFIG_PATH);
 
-    //TODO: implement http queries to update configs, read ingredients, update ingredients, read recipes, load recipes, and all of it through temp file so if connection is lost no data is lost
+    esp_ota_mark_app_valid_cancel_rollback();
 }
