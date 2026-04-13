@@ -2,13 +2,13 @@
   "pumps": [
     {
       "flowrate": 1200,
-      "ingredientId": 0,
+      "ingredientId": 1,
       "inverse": false,
       "volumeToSplitter": 10
     },
     {
       "flowrate": 1200,
-      "ingredientId": 0,
+      "ingredientId": 3,
       "inverse": false,
       "volumeToSplitter": 10
     },

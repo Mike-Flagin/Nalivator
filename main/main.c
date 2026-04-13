@@ -2,140 +2,41 @@
 #include <littlefs_helper.h>
 #include <pumps.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "esp_log.h"
-#include "cJSON.h"
 #include "esp_netif.h"
 #include "esp_netif_types.h"
 #include "sdkconfig.h"
 #include <string.h>
+
+#include "buttons.h"
 #include "nvs_flash.h"
 #include "esp_wifi_manager.h"
 #include "esp_bus.h"
 #include "esp_ota_ops.h"
 #include "esp_wifi.h"
+#include "servo.h"
 #include "tasks.h"
-#include "../include/files.h"
 #include "../include/uris.h"
 #include "values.h"
 #include "wifi_settings.h"
 
 static const char TAG[] = "main";
 
-static void init_config(const char* path)
-{
-    ESP_LOGI(TAG, "Attempting to load config: %s", path);
-
-    FILE* f = open_file_to_read(path);
-    char* json_buffer = NULL;
-    cJSON* root = NULL;
-    bool success = false;
-
-    if (f != NULL)
-    {
-        fseek(f, 0, SEEK_END);
-        const long file_size = ftell(f);
-        fseek(f, 0, SEEK_SET);
-
-        if (file_size > 0)
-        {
-            json_buffer = malloc(file_size + 1);
-            if (json_buffer != NULL)
-            {
-                const size_t bytes_read = fread(json_buffer, 1, file_size, f);
-                json_buffer[bytes_read] = '\0';
-
-                root = cJSON_Parse(json_buffer);
-                if (root != NULL)
-                {
-                    const cJSON* pumps_json = cJSON_GetObjectItem(root, PUMPS_JSON_KEY);
-                    if (cJSON_IsArray(pumps_json))
-                    {
-                        // Stack allocation for the configuration arrays
-                        uint16_t flowrates[PUMPS_AMOUNT] = {0};
-                        bool inverses[PUMPS_AMOUNT] = {false};
-                        uint16_t ingredients[PUMPS_AMOUNT] = {0};
-                        uint8_t volumes_to_splitter[PUMPS_AMOUNT] = {0};
-
-                        for (int i = 0; i < PUMPS_AMOUNT; i++)
-                        {
-                            cJSON* p = cJSON_GetArrayItem(pumps_json, i);
-                            if (!p) continue;
-
-                            flowrates[i] = (uint16_t)cJSON_GetNumberValue(cJSON_GetObjectItem(p, FLOWRATE_JSON_KEY));
-                            inverses[i] = cJSON_IsTrue(cJSON_GetObjectItem(p, INVERSE_JSON_KEY));
-                            ingredients[i] = (uint16_t)
-                                cJSON_GetNumberValue(cJSON_GetObjectItem(p, INGREDIENT_JSON_KEY));
-                            volumes_to_splitter[i] = (uint8_t)cJSON_GetNumberValue(
-                                cJSON_GetObjectItem(p, VOLUME_TO_SPLITTER_JSON_KEY));
-                        }
-
-                        configure_pumps(flowrates, inverses, ingredients, volumes_to_splitter);
-
-
-                        // Parse servoPositions array
-                        // TODO: implement servo logic
-                        const cJSON* servo_positions_json = cJSON_GetObjectItem(root, SERVO_POSITIONS_JSON_KEY);
-
-
-                        // Parse volumeAfterSplitter
-                        // TODO: implement volume after splitter logic
-                        const cJSON* volume_after_splitter_json = cJSON_GetObjectItem(
-                            root, VOLUME_AFTER_SPLITTER_JSON_KEY);
-
-
-                        // Parse LED colors arrays
-                        // TODO: implement color logic
-                        success = true;
-                    }
-                    else
-                    {
-                        ESP_LOGW(TAG, "Pumps array missing in %s", path);
-                    }
-                }
-                else
-                {
-                    ESP_LOGE(TAG, "JSON parse error in %s", path);
-                }
-            }
-            else
-            {
-                ESP_LOGE(TAG, "Memory allocation failed for %s", path);
-            }
-        }
-        close_file(f);
-    }
-
-    // Cleanup current attempt
-    if (root) cJSON_Delete(root);
-    if (json_buffer) free(json_buffer);
-
-    // Final result check
-    if (success)
-    {
-        ESP_LOGI(TAG, "Configuration applied from %s", path);
-    }
-    else
-    {
-        // Prevent infinite recursion if default also fails
-        if (strcmp(path, DEFAULT_CONFIG_PATH) != 0)
-        {
-            ESP_LOGW(TAG, "Main config failed. Falling back to default...");
-            init_config(DEFAULT_CONFIG_PATH);
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Default configuration failed to load!");
-        }
-    }
-}
-
 void app_main(void)
 {
     // Disable pumps
     init_pumps();
     disable_all_pumps();
+
+    // Initialize servo
+    init_servo();
+
+    // Initialize buttons
+    init_buttons();
+
+    // Initialize leds
+    init_leds();
 
     // Initialize tasks
     init_tasks();
@@ -170,7 +71,7 @@ void app_main(void)
     };
 
     // Initialize Wi-Fi Manager
-    const wifi_manager_config_t config = {
+    const wifi_manager_config_t wifi_config = {
         // Retry configuration
         .max_retry_per_network = WIFI_MAXIMUM_RETRY,
         .retry_interval_ms = 5000,
@@ -197,7 +98,7 @@ void app_main(void)
         },
     };
 
-    ret = wifi_manager_init(&config);
+    ret = wifi_manager_init(&wifi_config);
     if (ret != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to initialize WiFi Manager: %s", esp_err_to_name(ret));
@@ -218,9 +119,27 @@ void app_main(void)
         wifi_manager_start_ap(&ap_config);
     }
 
+    // testing only
+    xTaskCreatePinnedToCore(rebuild_index_task, "rebuild_index", 4096, NULL, 5, NULL, 1);
+
+
     // Initialize configuration
     littlefs_mount();
-    init_config(CONFIG_PATH);
+    xTaskCreatePinnedToCore(load_config_task, "load_config", 4096, NULL, 5, NULL, 1);
 
     esp_ota_mark_app_valid_cancel_rollback();
+
+    //xTaskCreate(print_cpu_load, "print_cpu_load", 2048, NULL, 1, NULL);
+    static StaticTask_t servo_task_buffer;
+    static StackType_t servo_stack[SERVO_TASK_STACK_SIZE];
+    servo_task_handle = xTaskCreateStaticPinnedToCore(servo_task, "servo_task", SERVO_TASK_STACK_SIZE, NULL, 18,
+                                                      servo_stack, &servo_task_buffer, 1);
+    static StaticTask_t leds_task_buffer;
+    static StackType_t leds_stack[LEDS_TASK_STACK_SIZE];
+    xTaskCreateStaticPinnedToCore(leds_task, "leds_task", LEDS_TASK_STACK_SIZE, NULL, 18, leds_stack, &leds_task_buffer,
+                                  1);
+    static StaticTask_t pour_task_buffer;
+    static StackType_t pour_stack[POUR_TASK_STACK_SIZE];
+    pour_task_handle = xTaskCreateStaticPinnedToCore(pour_task, "pour_task", POUR_TASK_STACK_SIZE, NULL, 19, pour_stack,
+                                                     &pour_task_buffer, 1);
 }

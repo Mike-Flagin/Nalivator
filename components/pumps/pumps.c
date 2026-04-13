@@ -57,7 +57,7 @@ void init_pumps()
             pin = GPIO_NUM_NC;
         }
         pumps[i].number = i;
-        pumps[i].pin = pin;;
+        pumps[i].pin = pin;
     }
     const gpio_config_t cfg = {
         .pin_bit_mask = 1 << PUMP_1_PIN | 1 << PUMP_2_PIN | 1 << PUMP_3_PIN | 1 << PUMP_4_PIN | 1ULL << PUMP_5_PIN

@@ -3,6 +3,7 @@
 #include <esp_http_server.h>
 #include <esp_log.h>
 #include <littlefs_helper.h>
+#include <math.h>
 #include <sys/param.h>
 
 #include "esp_ota_ops.h"
@@ -180,7 +181,7 @@ static esp_err_t update_config_request(httpd_req_t* req)
         httpd_resp_set_status(req, "201 Created");
         httpd_resp_send(req, NULL, 0);
         xSemaphoreGive(config_mutex);
-        //TODO: Create task on core 1 to load new config
+        xTaskCreatePinnedToCore(load_config_task, "load_config", 4096, NULL, 5, NULL, 1);
 
         return ESP_OK;
     }
@@ -450,6 +451,130 @@ static esp_err_t update_recipes_request(httpd_req_t* req)
     return ESP_FAIL;
 }
 
+static esp_err_t select_recipe_request(httpd_req_t* req)
+{
+    const size_t total_len = req->content_len;
+    size_t cur_len = 0;
+    if (total_len >= HTTP_RESPONSE_BUFF_SIZE)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    char* buffer = malloc(sizeof(char) * HTTP_RESPONSE_BUFF_SIZE);
+    int received = 0;
+
+    while (cur_len < total_len)
+    {
+        received = httpd_req_recv(req, buffer + cur_len, total_len);
+
+        if (received <= 0)
+        {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT) continue;
+
+            free(buffer);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+        }
+
+        cur_len += received;
+    }
+    buffer[total_len] = '\0';
+
+    cJSON* root = cJSON_Parse(buffer);
+    free(buffer);
+    cJSON *id_item = cJSON_GetObjectItem(root, RECIPE_ID_JSON_KEY);
+    cJSON *portion_item = cJSON_GetObjectItem(root, RECIPE_PORTION_JSON_KEY);
+
+    uint16_t id;
+    if (id_item != NULL && cJSON_IsNumber(id_item))
+    {
+        id = id_item->valueint;
+        ESP_LOGI(TAG, "Recipe ID: %d", id);
+    }
+    else
+    {
+        cJSON_Delete(root);
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    // if deselect
+    if (id == 0)
+    {
+        cJSON_Delete(root);
+        const recipe_t res = {0};
+        config.current_recipe = res;
+        httpd_resp_set_status(req, "200 OK");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    float portion;
+    if (portion_item != NULL && cJSON_IsNumber(portion_item))
+    {
+        portion = (float)portion_item->valuedouble;
+        ESP_LOGI(TAG, "Recipe portion: %.0f", portion);
+    }
+    else
+    {
+        cJSON_Delete(root);
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    cJSON_Delete(root);
+
+    //if portion value is invalid
+    if (portion <= 0)
+    {
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    // if recipe not found
+    if (!check_recipe_id(id))
+    {
+        httpd_resp_set_status(req, "404 Not Found");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    const recipe_t recipe = get_recipe(id);
+    //if reading failed
+    if (recipe.id == 0)
+    {
+        return httpd_resp_send_500(req);
+    }
+
+    // if ingredients missing
+    if (!check_recipe(&recipe))
+    {
+        httpd_resp_set_status(req, "406 Not Acceptable");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    config.current_recipe = recipe;
+    config.portion = portion;
+    httpd_resp_set_status(req, "200 OK");
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
+
+static esp_err_t get_selected_recipe_request(httpd_req_t* req)
+{
+    set_content_type_from_file(req, ".json");
+
+    cJSON* root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, RECIPE_ID_JSON_KEY, config.current_recipe.id);
+    cJSON_AddNumberToObject(root, RECIPE_PORTION_JSON_KEY, config.portion);
+
+    char* json = cJSON_Print(root);
+
+    cJSON_Delete(root);
+
+    httpd_resp_sendstr(req, json);
+    free(json);
+    return ESP_OK;
+}
+
 void init_server(httpd_handle_t server)
 {
     //register URIs
@@ -546,4 +671,20 @@ void init_server(httpd_handle_t server)
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &put_recipes_request);
+
+    static const httpd_uri_t select_recipe_request_handler = {
+        .uri = SELECT_RECIPE_URI,
+        .method = HTTP_POST,
+        .handler = select_recipe_request,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &select_recipe_request_handler);
+
+    static const httpd_uri_t get_selected_recipe_request_handler = {
+        .uri = SELECT_RECIPE_URI,
+        .method = HTTP_GET,
+        .handler = get_selected_recipe_request,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &get_selected_recipe_request_handler);
 }

@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include "soc/gpio_num.h"
 #include <stdbool.h>
+#include "../../include/values.h"
 
-#define PUMPS_AMOUNT 10
 
 typedef enum {
 	FORWARD = 1,
@@ -22,6 +22,9 @@ typedef struct
     bool inverse;
     uint8_t volume_to_splitter;
 } pump_t;
+
+extern pump_t pumps[PUMPS_AMOUNT];
+
 
 // register - second value
 // high high -- breaking
