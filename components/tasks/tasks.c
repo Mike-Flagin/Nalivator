@@ -22,20 +22,32 @@ config_t config;
 
 enum glass_state glasses[GLASSES_AMOUNT] = {POURED};
 
-void print_cpu_load(void* pvParameters)
+void print_system_stats(void* pvParameters)
 {
     while (true)
     {
-        // Allocate a buffer to hold the output string
-        char* stats_buffer = malloc(1024);
+        // Allocate a slightly larger buffer
+        char* stats_buffer = malloc(2048);
 
-        // This function populates the buffer with the CPU stats table
-        vTaskGetRunTimeStats(stats_buffer);
+        if (stats_buffer != NULL)
+        {
+            // 1. Print CPU Load
+            vTaskGetRunTimeStats(stats_buffer);
+            ESP_LOGI("STATS", "--- CPU Runtime Stats ---\n%s", stats_buffer);
 
-        // Print the result to the console
-        ESP_LOGI("CPU", "Task Execution Stats:\n%s", stats_buffer);
-        free(stats_buffer);
-        vTaskDelay(pdMS_TO_TICKS(2000));
+            // 2. Print Memory (Stack) Stats
+            vTaskList(stats_buffer);
+            ESP_LOGI("STATS", "--- Task Memory Stats ---\nFormat: Name | State | Priority | High Water Mark | Task Num\n%s", stats_buffer);
+
+            free(stats_buffer);
+        }
+        else
+        {
+            ESP_LOGE("STATS", "Failed to allocate memory for stats buffer!");
+        }
+
+        // I recommend slowing this down to 5 or 10 seconds so it doesn't spam the console!
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
 
@@ -430,7 +442,7 @@ void pour_task(void* pvParameters)
                     if (config.current_recipe.ingredients[i].id == pumps[j].ingredient_id)
                     {
                         current_pump = j;
-                        pour_time_ms = GET_POURING_TIME_MS(config.current_recipe.ingredients[i].amount, pumps[current_pump].flowrate);
+                        pour_time_ms = GET_POURING_TIME_MS(config.current_recipe.ingredients[i].amount + config.volume_after_splitter, pumps[current_pump].flowrate);
                         enable_pump(&pumps[j], FORWARD);
                         break;
                     }

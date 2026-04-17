@@ -46,7 +46,7 @@ typedef struct
 
 extern config_t config;
 
-void print_cpu_load(void *pvParameters);
+void print_system_stats(void *pvParameters);
 void init_tasks();
 void rebuild_index_task(void *pvParameters);
 void restart_esp(void* arg);

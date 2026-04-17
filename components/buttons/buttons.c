@@ -32,7 +32,7 @@ static void IRAM_ATTR button_isr_handler(void* arg)
 
 void init_buttons()
 {
-    button_queue = xQueueCreate(10, sizeof(uint32_t));
+    button_queue = xQueueCreate(10, sizeof(button_event_t));
 
     static StaticTask_t buttons_task_buffer;
     static StackType_t buttons_stack[BUTTONS_TASK_STACK_SIZE];

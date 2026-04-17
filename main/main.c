@@ -120,8 +120,15 @@ void app_main(void)
     }
 
     // testing only
-    xTaskCreatePinnedToCore(rebuild_index_task, "rebuild_index", 4096, NULL, 5, NULL, 1);
-
+    FILE* fidx = open_file_to_read(RECIPES_INDEX_PATH);
+    if (fidx == NULL)
+    {
+        xTaskCreatePinnedToCore(rebuild_index_task, "rebuild_index", 4096, NULL, 5, NULL, 1);
+    }
+    else
+    {
+        close_file(fidx);
+    }
 
     // Initialize configuration
     littlefs_mount();
@@ -129,7 +136,7 @@ void app_main(void)
 
     esp_ota_mark_app_valid_cancel_rollback();
 
-    //xTaskCreate(print_cpu_load, "print_cpu_load", 2048, NULL, 1, NULL);
+    xTaskCreate(print_system_stats, "print_system_stats", 2048, NULL, 1, NULL);
     static StaticTask_t servo_task_buffer;
     static StackType_t servo_stack[SERVO_TASK_STACK_SIZE];
     servo_task_handle = xTaskCreateStaticPinnedToCore(servo_task, "servo_task", SERVO_TASK_STACK_SIZE, NULL, 18,

@@ -66,15 +66,18 @@
 [
   {
     "id": 1,
-    "name": "Водичка"
+    "name": "Водичка",
+    "category": 0
   },
   {
     "id": 2,
-    "name": "Огненная водичка\uD83D\uDD25"
+    "name": "Огненная водичка\uD83D\uDD25",
+    "category": 0
   },
   {
     "id": 3,
-    "name": "Чай улун"
+    "name": "Чай улун",
+    "category": 0
   }
 ]
 ```
@@ -111,6 +114,7 @@
   {
     "id": 1,
     "name": "Кровавая Мэри",
+    "description": "",
     "ingredients": [
       { "ingredientId": 1, "amount": 50 },
       { "ingredientId": 3, "amount": 100 }
@@ -119,6 +123,7 @@
   {
      "id": 2,
     "name": "Джин-Тоник",
+    "description": "",
     "ingredients": [
       { "ingredientId": 4, "amount": 50 },
       { "ingredientId": 5, "amount": 150 }
@@ -127,6 +132,7 @@
   {
     "id": 3,
     "name": "Текила Санрайз",
+    "description": "",
     "ingredients": [
       { "ingredientId": 6, "amount": 50 },
       { "ingredientId": 2, "amount": 120 },
