@@ -64,7 +64,11 @@ recipe_t get_recipe(const uint16_t id)
     }
 
     recipe.id = (uint16_t)cJSON_GetNumberValue(cJSON_GetObjectItem(recipe_json, RECIPE_ID_JSON_KEY));
-    recipe.name = cJSON_GetStringValue(cJSON_GetObjectItem(recipe_json, RECIPE_NAME_JSON_KEY));
+    const char* temp_name = cJSON_GetStringValue(cJSON_GetObjectItem(recipe_json, RECIPE_NAME_JSON_KEY));
+    if (temp_name != NULL)
+    {
+        recipe.name = strdup(temp_name);
+    }
     const cJSON* ingredients_array = cJSON_GetObjectItem(recipe_json, RECIPE_INGREDIENTS_JSON_KEY);
     recipe.ingredients_amount = cJSON_GetArraySize(ingredients_array);
     recipe.ingredients = malloc(recipe.ingredients_amount * sizeof(ingredient_t));
@@ -78,6 +82,27 @@ recipe_t get_recipe(const uint16_t id)
     }
     cJSON_Delete(recipe_json);
     return recipe;
+}
+
+char* get_recipe_name(const uint16_t id)
+{
+    cJSON* recipe_json = get_recipe_json(id);
+    if (recipe_json == NULL)
+    {
+        return NULL;
+    }
+
+    const char* temp_name = cJSON_GetStringValue(cJSON_GetObjectItem(recipe_json, RECIPE_NAME_JSON_KEY));
+
+    char* name = NULL;
+    if (temp_name != NULL)
+    {
+        name = strdup(temp_name);
+    }
+
+    cJSON_Delete(recipe_json);
+
+    return name;
 }
 
 void rebuild_index()
@@ -123,20 +148,15 @@ void rebuild_index()
 
 bool check_recipe_id(const uint16_t id)
 {
-    FILE* fidx = open_file_to_read_binary(RECIPES_INDEX_PATH);
-    if (fidx == NULL)
+    const uint16_t recipes_count = get_recipes_count();
+
+    if (recipes_count < id)
     {
-        ESP_LOGE(TAG, "Failed to open file %s", RECIPES_INDEX_PATH);
+        ESP_LOGW(TAG, "Recipe ID %d is out of bounds (Max ID: %ld)",
+                 id, recipes_count);
         return false;
     }
 
-    if (fseek(fidx, id * sizeof(recipe_index_t), SEEK_SET)) // NOLINT(*-narrowing-conversions)
-    {
-        // if no id
-        ESP_LOGE(TAG, "Failed to read id %d", id);
-        close_file(fidx);
-        return false;
-    }
     return true;
 }
 
@@ -155,4 +175,50 @@ bool check_recipe(const recipe_t* recipe)
         }
     }
     return true;
+}
+
+uint16_t get_recipe_volume(const uint16_t id)
+{
+    uint16_t volume = 0;
+    cJSON* recipe_json = get_recipe_json(id);
+    if (recipe_json == NULL)
+    {
+        return volume;
+    }
+
+    const cJSON* ingredients_array = cJSON_GetObjectItem(recipe_json, RECIPE_INGREDIENTS_JSON_KEY);
+    const uint8_t ingredients_amount = cJSON_GetArraySize(ingredients_array);
+    for (uint8_t i = 0; i < ingredients_amount; i++)
+    {
+        const cJSON* ingredient = cJSON_GetArrayItem(ingredients_array, i);
+        volume += (uint16_t)cJSON_GetNumberValue(cJSON_GetObjectItem(ingredient, INGREDIENT_AMOUNT_JSON_KEY));
+    }
+
+    cJSON_Delete(recipe_json);
+    return volume;
+}
+
+
+uint8_t get_recipes_count()
+{
+    FILE* fidx = open_file_to_read_binary(RECIPES_INDEX_PATH);
+    if (fidx == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file %s", RECIPES_INDEX_PATH);
+        return 0;
+    }
+
+    fseek(fidx, 0, SEEK_END);
+
+    const size_t file_size = ftell(fidx);
+
+    close_file(fidx);
+
+    return file_size / sizeof(recipe_index_t);
+}
+
+void free_recipe(recipe_t* recipe)
+{
+    free(recipe->name);
+    free(recipe->ingredients);
 }

@@ -10,6 +10,7 @@
 #include "driver/rmt_tx.h"
 #include "driver/rmt_types.h"
 #include "../../include/pins.h"
+#include "driver/gpio.h"
 
 static char* TAG = "LEDS";
 
@@ -135,6 +136,7 @@ err:
 void init_leds(void)
 {
     ESP_LOGI(TAG, "Create RMT TX channel");
+
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .gpio_num = LED_PIN,
@@ -150,6 +152,9 @@ void init_leds(void)
         .resolution = RMT_LED_STRIP_RESOLUTION_HZ,
     };
     ESP_ERROR_CHECK(rmt_new_led_strip_encoder(&encoder_config, &led_encoder_handle));
+
+    color_t initial_leds[GLASSES_AMOUNT] = {0};
+    update_leds(initial_leds);
 }
 
 void update_leds(color_t leds[GLASSES_AMOUNT])

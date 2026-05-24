@@ -18,6 +18,8 @@
 
 extern TaskHandle_t pour_task_handle;
 extern TaskHandle_t servo_task_handle;
+extern TaskHandle_t touches_task_handle;
+
 
 extern SemaphoreHandle_t recipes_mutex;
 extern SemaphoreHandle_t ingredients_mutex;

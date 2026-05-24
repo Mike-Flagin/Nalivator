@@ -3,6 +3,7 @@
 
 #define WIFI_AP_SSID "Nalivator-AP"
 #define WIFI_AP_PASS "123456789"
+#define WIFI_AP_IP "192.168.4.1"
 #define WIFI_MAXIMUM_RETRY 3
 
 #endif //NALIVATOR_WIFI_SETTINGS_H

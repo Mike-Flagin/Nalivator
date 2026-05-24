@@ -5,15 +5,17 @@
 #include <littlefs_helper.h>
 #include <math.h>
 #include <sys/param.h>
+#include <errno.h>
 
 #include "esp_ota_ops.h"
 #include "esp_timer.h"
+#include "oled.h"
 #include "tasks.h"
 #include "../../include/uris.h"
 #include "../../include/files.h"
 #include "../../include/values.h"
 
-#define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
+#define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&(filename)[strlen((filename)) - strlen((ext))], (ext)) == 0)
 
 static const char* TAG = "http_server";
 
@@ -78,6 +80,7 @@ static esp_err_t send_file(httpd_req_t* req, FILE* file)
     }
     while (chunk_size != 0);
     free(chunk);
+    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
 
@@ -99,6 +102,13 @@ static esp_err_t redirect_to_select_recipe_page(httpd_req_t* req)
 {
     httpd_resp_set_status(req, "302 Found");
     httpd_resp_set_hdr(req, "Location", SELECT_RECIPE_PAGE_URI);
+
+    //start oled
+    kill_display_task();
+    static StaticTask_t display_task_buffer;
+    static StackType_t display_stack[DISPLAY_TASK_STACK_SIZE];
+    display_task_handle = xTaskCreateStaticPinnedToCore(oled_menu_task, "display_task", DISPLAY_TASK_STACK_SIZE, NULL,
+                                                        3, display_stack, &display_task_buffer, 0);
     return httpd_resp_send(req, NULL, 0);
 }
 
@@ -187,6 +197,93 @@ static esp_err_t update_config_request(httpd_req_t* req)
     }
     httpd_resp_send_500(req);
     return ESP_FAIL;
+}
+
+static esp_err_t set_pump_request(httpd_req_t* req)
+{
+    //deselect if any selected
+    if (config.current_recipe.id != 0) free_recipe(&config.current_recipe);
+    config.current_recipe.id = 0;
+
+    //parse json
+    const size_t total_len = req->content_len;
+    size_t cur_len = 0;
+    if (total_len >= HTTP_RESPONSE_BUFF_SIZE)
+    {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    char* buffer = malloc(sizeof(char) * HTTP_RESPONSE_BUFF_SIZE);
+    int received = 0;
+
+    while (cur_len < total_len)
+    {
+        received = httpd_req_recv(req, buffer + cur_len, total_len);
+
+        if (received <= 0)
+        {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT) continue;
+
+            free(buffer);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+        }
+
+        cur_len += received;
+    }
+    buffer[total_len] = '\0';
+
+    cJSON* root = cJSON_Parse(buffer);
+    free(buffer);
+    cJSON *id_obj = cJSON_GetObjectItem(root, PUMP_ID_JSON_KEY);
+    cJSON *state_obj = cJSON_GetObjectItem(root, PUMP_STATE_JSON_KEY);
+
+    uint8_t id;
+    if (id_obj != NULL && cJSON_IsNumber(id_obj))
+    {
+        id = id_obj->valueint;
+        ESP_LOGI(TAG, "Pump ID: %d", id);
+    }
+    else
+    {
+        cJSON_Delete(root);
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    if (id > PUMPS_AMOUNT - 1)
+    {
+        cJSON_Delete(root);
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    int8_t state;
+    if (state_obj != NULL && cJSON_IsNumber(state_obj))
+    {
+        state = state_obj->valueint; // NOLINT(*-narrowing-conversions)
+        ESP_LOGI(TAG, "Pump state: %d", state);
+    }
+    else
+    {
+        cJSON_Delete(root);
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    if (state < -1 || state > 1)
+    {
+        cJSON_Delete(root);
+        httpd_resp_set_status(req, "400 Bad Request");
+        return httpd_resp_send(req, NULL, 0);
+    }
+
+    cJSON_Delete(root);
+
+    disable_all_pumps();
+    enable_pump(&pumps[id], state);
+    httpd_resp_set_status(req, "200 OK");
+    return httpd_resp_sendstr(req, "");
 }
 
 static esp_err_t update_firmware_request(httpd_req_t* req)
@@ -348,7 +445,8 @@ static esp_err_t update_ingredients_request(httpd_req_t* req)
         delete_file(INGREDIENTS_PATH);
         if (!rename_file(TEMP_INGREDIENTS_PATH, INGREDIENTS_PATH))
         {
-            ESP_LOGE(TAG, "Failed to rename temp file");
+            ESP_LOGE(TAG, "Rename failed! Error: %s", strerror(errno));
+            xSemaphoreGive(ingredients_mutex);
             httpd_resp_send_500(req);
             return ESP_FAIL;
         }
@@ -432,8 +530,9 @@ static esp_err_t update_recipes_request(httpd_req_t* req)
         delete_file(RECIPES_PATH);
         if (!rename_file(TEMP_RECIPES_PATH, RECIPES_PATH))
         {
-            ESP_LOGE(TAG, "Failed to rename temp file");
+            ESP_LOGE(TAG, "Rename failed! Error: %s", strerror(errno));
             httpd_resp_send_500(req);
+            xSemaphoreGive(recipes_mutex);
             return ESP_FAIL;
         }
 
@@ -444,6 +543,9 @@ static esp_err_t update_recipes_request(httpd_req_t* req)
         xSemaphoreGive(recipes_mutex);
 
         xTaskCreatePinnedToCore(rebuild_index_task, "rebuild_index", 4096, NULL, 5, NULL, 1);
+        //deselect if any selected
+        if (config.current_recipe.id != 0) free_recipe(&config.current_recipe);
+        config.current_recipe.id = 0;
 
         return ESP_OK;
     }
@@ -503,6 +605,7 @@ static esp_err_t select_recipe_request(httpd_req_t* req)
     {
         cJSON_Delete(root);
         const recipe_t res = {0};
+        if (config.current_recipe.id != 0) free_recipe(&config.current_recipe);
         config.current_recipe = res;
         httpd_resp_set_status(req, "200 OK");
         return httpd_resp_send(req, NULL, 0);
@@ -537,7 +640,7 @@ static esp_err_t select_recipe_request(httpd_req_t* req)
         return httpd_resp_send(req, NULL, 0);
     }
 
-    const recipe_t recipe = get_recipe(id);
+    recipe_t recipe = get_recipe(id);
     //if reading failed
     if (recipe.id == 0)
     {
@@ -548,8 +651,12 @@ static esp_err_t select_recipe_request(httpd_req_t* req)
     if (!check_recipe(&recipe))
     {
         httpd_resp_set_status(req, "406 Not Acceptable");
+        free_recipe(&recipe);
         return httpd_resp_send(req, NULL, 0);
     }
+
+    //clean previous selection
+    if (config.current_recipe.id != 0) free_recipe(&config.current_recipe);
 
     config.current_recipe = recipe;
     config.portion = portion;
@@ -621,6 +728,14 @@ void init_server(httpd_handle_t server)
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &put_config_request);
+
+    static const httpd_uri_t post_pump_request = {
+        .uri = SET_PUMP_STATE_URI,
+        .method = HTTP_POST,
+        .handler = set_pump_request,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &post_pump_request);
 
     static const httpd_uri_t ota_update_request = {
         .uri = UPDATE_URI,

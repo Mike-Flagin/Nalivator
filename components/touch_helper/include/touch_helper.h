@@ -1,7 +1,8 @@
 #ifndef HELLO_WORLD_TOUCH_HELPER_H
 #define HELLO_WORLD_TOUCH_HELPER_H
 #include <stdbool.h>
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 /**
  * @brief Initializes the touch sensor subsystem.
  *
@@ -16,7 +17,7 @@ void init_touches();
  * This function should be called regularly to read the current touch sensor
  * values and update the internal state for press, hold, and release detection.
  */
-void update_touches();
+void update_touches_task(void* pvParameters);
 
 /**
  * @brief Checks if the "next" touch button was pressed.

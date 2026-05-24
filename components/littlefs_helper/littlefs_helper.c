@@ -2,7 +2,6 @@
 
 #include <esp_littlefs.h>
 #include <esp_log.h>
-#include <stdlib.h>
 #include <sys/unistd.h>
 #include <sys/_default_fcntl.h>
 
@@ -140,13 +139,13 @@ bool rename_file(const char* file_name, const char* new_file_name)
     if (snprintf(old_path, sizeof(old_path), "%s/%s", LITTLEFS_BASE_PATH, file_name) >= sizeof(old_path))
     {
         ESP_LOGE(TAG, "File path too long");
-        return NULL;
+        return false;
     }
     char new_path[LITTLEFS_MAX_PATH_LENGTH];
     if (snprintf(new_path, sizeof(new_path), "%s/%s", LITTLEFS_BASE_PATH, new_file_name) >= sizeof(new_path))
     {
         ESP_LOGE(TAG, "File path too long");
-        return NULL;
+        return false;
     }
     ESP_LOGI(TAG, "Renaming file");
     return !rename(old_path, new_path);

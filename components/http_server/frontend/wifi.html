@@ -190,7 +190,7 @@
         showStatus('Skipping setup...', true);
 
         try {
-            const res = await fetch(`${API_BASE}/without_connection`, {
+            const res = await fetch(`${API_BASE}/without-connection`, {
                 method: 'POST',
                 redirect: 'follow' // This tells the browser to follow the 302 redirect automatically
             });

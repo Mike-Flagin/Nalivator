@@ -12,6 +12,7 @@
 #define INGREDIENTS_URI "/ingredients"
 #define RECIPES_URI "/recipes"
 #define SELECT_RECIPE_URI "/select-recipe"
+#define SET_PUMP_STATE_URI "/set-pump-state"
 #define UPDATE_URI "/firmware-update"
 #define RESTART_URI "/restart"
 

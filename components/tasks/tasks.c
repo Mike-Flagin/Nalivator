@@ -5,9 +5,11 @@
 #include "recipe.h"
 #include "servo.h"
 #include "../../include/pins.h"
+#include "../oled/include/oled.h"
 
 TaskHandle_t pour_task_handle;
 TaskHandle_t servo_task_handle;
+TaskHandle_t touches_task_handle;
 
 SemaphoreHandle_t recipes_mutex;
 SemaphoreHandle_t ingredients_mutex;
@@ -20,13 +22,12 @@ static TickType_t last_button_time[4] = {0, 0, 0, 0};
 
 config_t config;
 
-enum glass_state glasses[GLASSES_AMOUNT] = {POURED};
+enum glass_state glasses[GLASSES_AMOUNT] = {0};
 
 void print_system_stats(void* pvParameters)
 {
     while (true)
     {
-        // Allocate a slightly larger buffer
         char* stats_buffer = malloc(2048);
 
         if (stats_buffer != NULL)
@@ -37,7 +38,9 @@ void print_system_stats(void* pvParameters)
 
             // 2. Print Memory (Stack) Stats
             vTaskList(stats_buffer);
-            ESP_LOGI("STATS", "--- Task Memory Stats ---\nFormat: Name | State | Priority | High Water Mark | Task Num\n%s", stats_buffer);
+            ESP_LOGI("STATS",
+                     "--- Task Memory Stats ---\nFormat: Name | State | Priority | High Water Mark | Task Num\n%s",
+                     stats_buffer);
 
             free(stats_buffer);
         }
@@ -46,7 +49,6 @@ void print_system_stats(void* pvParameters)
             ESP_LOGE("STATS", "Failed to allocate memory for stats buffer!");
         }
 
-        // I recommend slowing this down to 5 or 10 seconds so it doesn't spam the console!
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
@@ -210,6 +212,10 @@ void rebuild_index_task(void* pvParameters)
     {
         rebuild_index();
 
+        if (display_events != NULL)
+        {
+            xEventGroupSetBits(display_events, RECIPES_UPDATED_BIT);
+        }
         xSemaphoreGive(recipes_mutex);
     }
 
@@ -345,7 +351,7 @@ void leds_task(void* pvParameters)
                 current_leds[i].b != last_leds[i].b)
             {
                 needs_update = true;
-                last_leds[i] = current_leds[i]; // Update our history
+                last_leds[i] = current_leds[i];
             }
         }
         if (needs_update)
@@ -442,7 +448,9 @@ void pour_task(void* pvParameters)
                     if (config.current_recipe.ingredients[i].id == pumps[j].ingredient_id)
                     {
                         current_pump = j;
-                        pour_time_ms = GET_POURING_TIME_MS(config.current_recipe.ingredients[i].amount + config.volume_after_splitter, pumps[current_pump].flowrate);
+                        pour_time_ms = GET_POURING_TIME_MS(
+                            config.current_recipe.ingredients[i].amount + config.volume_after_splitter,
+                            pumps[current_pump].flowrate);
                         enable_pump(&pumps[j], FORWARD);
                         break;
                     }
@@ -466,7 +474,8 @@ void pour_task(void* pvParameters)
                 vTaskDelay(pdMS_TO_TICKS(50));
 
                 // Reverse
-                const uint32_t reverse_time_ms = GET_POURING_TIME_MS(config.volume_after_splitter, pumps[current_pump].flowrate);
+                const uint32_t reverse_time_ms = GET_POURING_TIME_MS(config.volume_after_splitter,
+                                                                     pumps[current_pump].flowrate);
 
                 enable_pump(&pumps[current_pump], BACKWARD);
 

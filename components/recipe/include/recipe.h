@@ -30,8 +30,12 @@ typedef struct
 
 cJSON* get_recipe_json(uint16_t id);
 recipe_t get_recipe(uint16_t id);
+char* get_recipe_name(uint16_t id);
 void rebuild_index();
 bool check_recipe_id(uint16_t id);
 bool check_recipe(const recipe_t* recipe);
+uint8_t get_recipes_count();
+uint16_t get_recipe_volume(uint16_t id);
+void free_recipe(recipe_t* recipe);
 
 #endif //NALIVATOR_RECIPE_H
