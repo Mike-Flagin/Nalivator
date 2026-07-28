@@ -15,40 +15,62 @@
 #include "../../include/files.h"
 #include "../../include/values.h"
 
-#define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&(filename)[strlen((filename)) - strlen((ext))], (ext)) == 0)
-
 static const char* TAG = "http_server";
 
-extern const uint8_t wifi_html_start[] asm("_binary_wifi_html_gz_start");
-extern const uint8_t wifi_html_end[] asm("_binary_wifi_html_gz_end");
-extern const uint8_t recipe_html_start[] asm("_binary_recipe_html_gz_start");
-extern const uint8_t recipe_html_end[] asm("_binary_recipe_html_gz_end");
+static bool has_extension(const char* filename, const char* ext)
+{
+    size_t filename_len = strlen(filename);
+    size_t ext_len = strlen(ext);
+    if (filename_len < ext_len) return false;
+    return strcasecmp(filename + filename_len - ext_len, ext) == 0;
+}
 
 static esp_err_t set_content_type_from_file(httpd_req_t* req, const char* filepath)
 {
     const char* type = "text/plain";
-    if (strstr(filepath, ".html"))
+
+    char clean_path[256];
+    snprintf(clean_path, sizeof(clean_path), "%s", filepath);
+
+    if (has_extension(clean_path, ".gz"))
+    {
+        clean_path[strlen(clean_path) - 3] = '\0';
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    }
+
+    if (has_extension(clean_path, ".html") || has_extension(clean_path, ".htm"))
     {
         type = "text/html";
     }
-    else if (strstr(filepath, ".js"))
+    else if (has_extension(clean_path, ".js") || has_extension(clean_path, ".mjs"))
     {
         type = "application/javascript";
     }
-    else if (strstr(filepath, ".css"))
+    else if (has_extension(clean_path, ".css"))
     {
         type = "text/css";
     }
-    else if (strstr(filepath, ".json"))
+    else if (has_extension(clean_path, ".json"))
     {
         type = "application/json";
     }
-
-    if (CHECK_FILE_EXTENSION(filepath, ".gz"))
+    else if (has_extension(clean_path, ".xml"))
     {
-        const esp_err_t r = httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-        if (r != ESP_OK) return r;
+        type = "text/xml";
     }
+    else if (has_extension(clean_path, ".svg"))
+    {
+        type = "image/svg+xml";
+    }
+    else if (has_extension(clean_path, ".yaml") || has_extension(clean_path, ".yml"))
+    {
+        type = "text/yaml";
+    }
+    else if (has_extension(clean_path, ".toml"))
+    {
+        type = "application/toml";
+    }
+
     return httpd_resp_set_type(req, type);
 }
 
@@ -84,18 +106,57 @@ static esp_err_t send_file(httpd_req_t* req, FILE* file)
     return ESP_OK;
 }
 
-static esp_err_t send_wifi_page(httpd_req_t* req)
+static esp_err_t static_file_handler(httpd_req_t* req)
 {
-    set_content_type_from_file(req, WIFI_PAGE_HTML);
-    return httpd_resp_send(req, (const char*)wifi_html_start,
-                           wifi_html_end - wifi_html_start);
-}
+    char filepath[256];
+    const char* uri = req->uri;
 
-static esp_err_t send_select_recipe_page(httpd_req_t* req)
-{
-    set_content_type_from_file(req, SELECT_RECIPE_PAGE_HTML);
-    return httpd_resp_send(req, (const char*)recipe_html_start,
-                           recipe_html_end - recipe_html_start);
+    // Clean query-params
+    const char* query_pos = strchr(uri, '?');
+    size_t uri_len = query_pos ? (size_t)(query_pos - uri) : strlen(uri);
+
+    // Redirect "/" to "/index.html"
+    if (uri_len == 1 && uri[0] == '/')
+    {
+        snprintf(filepath, sizeof(filepath), "/index.html");
+    }
+    else
+    {
+        if (uri_len >= sizeof(filepath))
+        {
+            httpd_resp_send_404(req);
+            return ESP_FAIL;
+        }
+        strncpy(filepath, uri, uri_len);
+        filepath[uri_len] = '\0';
+    }
+
+    char gz_filepath[260];
+    snprintf(gz_filepath, sizeof(gz_filepath), "%s.gz", filepath);
+
+    // 1. Search compressed version (.gz)
+    FILE* f = open_file_to_read(gz_filepath);
+    if (f)
+    {
+        set_content_type_from_file(req, gz_filepath);
+        esp_err_t ret = send_file(req, f);
+        close_file(f);
+        return ret;
+    }
+
+    // 2. If there is no .gz search plain file
+    f = open_file_to_read(filepath);
+    if (f)
+    {
+        set_content_type_from_file(req, filepath);
+        esp_err_t ret = send_file(req, f);
+        close_file(f);
+        return ret;
+    }
+
+    ESP_LOGW(TAG, "File not found: %s", filepath);
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
 }
 
 static esp_err_t redirect_to_select_recipe_page(httpd_req_t* req)
@@ -684,16 +745,7 @@ static esp_err_t get_selected_recipe_request(httpd_req_t* req)
 
 void init_server(httpd_handle_t server)
 {
-    //register URIs
-    //Wi-Fi page
-    static const httpd_uri_t wifi_page_uri = {
-        .uri = WIFI_PAGE_URI,
-        .method = HTTP_GET,
-        .handler = send_wifi_page,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &wifi_page_uri);
-
+    // APIs
     static const httpd_uri_t wifi_dont_connect_uri = {
         .uri = WIFI_DONT_CONNECT_URI,
         .method = HTTP_POST,
@@ -702,16 +754,6 @@ void init_server(httpd_handle_t server)
     };
     httpd_register_uri_handler(server, &wifi_dont_connect_uri);
 
-    //select recipe page
-    static const httpd_uri_t select_recipe_page_uri = {
-        .uri = SELECT_RECIPE_PAGE_URI,
-        .method = HTTP_GET,
-        .handler = send_select_recipe_page,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &select_recipe_page_uri);
-
-    // APIs
     // Configuration
     static const httpd_uri_t get_config_request = {
         .uri = CONFIG_URI,
@@ -802,4 +844,12 @@ void init_server(httpd_handle_t server)
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &get_selected_recipe_request_handler);
+
+    static const httpd_uri_t static_file_uri = {
+        .uri = "/*",
+        .method = HTTP_GET,
+        .handler = static_file_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &static_file_uri);
 }
