@@ -9,7 +9,6 @@ export default function Accordion({title, condition, slot_component}) {
 
     const clickHandler = () => {
         setOpen (!open);
-        console.log(open);
     }
 
     return (
@@ -24,11 +23,11 @@ export default function Accordion({title, condition, slot_component}) {
 
                 </div>
             </div>
-            <span className={`${style_accordion.accordionCollapse} ${open ? style_accordion.open : ''}`}>
+            <div className={`${style_accordion.accordionCollapse} ${open ? style_accordion.open : ''}`}>
                 <div className={style_accordion.accordionBody}>
                     {slot_component}
                 </div>
-            </span>
+            </div>
         </div>
     )
 

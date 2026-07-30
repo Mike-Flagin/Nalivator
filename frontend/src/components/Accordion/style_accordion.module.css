@@ -39,13 +39,18 @@
     position: relative;
 }
 
-.accordionCollapse {
-    height: 0;
-    overflow: hidden;
-    transition: height 0.9s;
-    position: relative;
+.accordionCollapse{
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out;
 }
 
+.accordionCollapse > .accordionBody {
+    overflow: hidden;
+}
+
+
 .accordionCollapse.open {
-    height: auto;
+    grid-template-rows: 1fr;
+    overflow: hidden;
 }
