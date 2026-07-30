@@ -26,6 +26,7 @@ function App() {
             "slot": "Чай улун"
         }
     ]
+
     return (
         <>
             <section id="center">
@@ -38,20 +39,18 @@ function App() {
                 />
             </section>
 
-
+            <section id="center">
                 <Accordion
-                    title = "Game"
-                    condition = {false}
-                    slot_component = <Spinner
-                        val={portion}
-                        min={1}
-                        max={10}
-                        step={0.5}
-                        onChange={val => setPortion(val)}
-                    />
-
-                />
-
+                    title="Game"
+                    condition={false}
+                    slot_component=<Spinner
+                    val={portion}
+                    min={1}
+                    max={10}
+                    step={0.5}
+                    onChange={val => setPortion(val)}
+                />/>
+            </section>
 
         </>
     )
