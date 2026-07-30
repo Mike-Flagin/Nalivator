@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import styles from  './Spinner.module.css'
+import styles from './style_spinner.module.css'
 
 export default function Spinner({val, min, max, step, onChange}) {
     const [value, setValue] = useState(val);
@@ -22,15 +22,15 @@ export default function Spinner({val, min, max, step, onChange}) {
 
     return (
         <div className={styles.spinner}>
-            <div onClick={handleClickMinus}>
-                <span>-</span>
-            </div>
+            <button onClick={handleClickMinus}>
+                -
+            </button>
             <div>
                 <span>{value}</span>
             </div>
-            <div onClick={handleClickPlus}>
+            <button onClick={handleClickPlus}>
                 <span>+</span>
-            </div>
+            </button>
         </div>
     )
 }

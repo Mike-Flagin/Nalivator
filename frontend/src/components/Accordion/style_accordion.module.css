@@ -1,0 +1,50 @@
+.accordionItem {
+    background: var(--while-plate, #ffffff);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 280px;
+    position: relative;
+    overflow: hidden;
+}
+
+.accordionHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    align-self: stretch;
+    flex-shrink: 0;
+    position: relative;
+
+    color: var(--black-textcolor, #1a281f);
+    text-align: left;
+    font-family: var(--title2-font-family, Inter-Bold, sans-serif);
+    font-size: var(--title2-font-size, 18px);
+    font-weight: var(--title2-font-weight, 700);
+}
+
+.accordionBody {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    align-self: stretch;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.accordionCollapse{
+    height:0;
+    overflow:hidden;
+    transition: height 0.9s;
+    position: relative;
+}
+.accordionCollapse.open{
+    height: auto;
+}

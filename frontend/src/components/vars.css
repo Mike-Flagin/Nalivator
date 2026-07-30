@@ -1,0 +1,71 @@
+/* Figma Styles of your File */
+:root {
+  /* Colors */
+  --whitegrey-background: #f4f5f7;
+  --while-plate: #ffffff;
+  --grey-side: #8f8e94;
+  --black-textcolor: #1a281f;
+  --darkblue-main: #1c448e;
+  --red-warning: #c20114;
+  --green-accept: #427654;
+
+  /* Fonts */
+  --title1-font-family: Inter-ExtraBold, sans-serif;
+  --title1-font-size: 24px;
+  --title1-line-height: normal;
+  --title1-font-weight: 800;
+  --title1-font-style: normal;
+  --title-15-font-family: Inter-Bold, sans-serif;
+  --title-15-font-size: 20px;
+  --title-15-line-height: normal;
+  --title-15-font-weight: 700;
+  --title-15-font-style: normal;
+  --title2-font-family: Inter-Bold, sans-serif;
+  --title2-font-size: 18px;
+  --title2-line-height: normal;
+  --title2-font-weight: 700;
+  --title2-font-style: normal;
+  --title3-font-family: Inter-Bold, sans-serif;
+  --title3-font-size: 16px;
+  --title3-line-height: normal;
+  --title3-font-weight: 700;
+  --title3-font-style: normal;
+  --title4-font-family: Inter-Bold, sans-serif;
+  --title4-font-size: 14px;
+  --title4-line-height: normal;
+  --title4-font-weight: 700;
+  --title4-font-style: normal;
+  --title5-font-family: Inter-Bold, sans-serif;
+  --title5-font-size: 12px;
+  --title5-line-height: normal;
+  --title5-font-weight: 700;
+  --title5-font-style: normal;
+  --description1-font-family: Inter-Regular, sans-serif;
+  --description1-font-size: 12px;
+  --description1-line-height: normal;
+  --description1-font-weight: 400;
+  --description1-font-style: normal;
+  --description2-font-family: Inter-Regular, sans-serif;
+  --description2-font-size: 14px;
+  --description2-line-height: normal;
+  --description2-font-weight: 400;
+  --description2-font-style: normal;
+  --description3-font-family: Inter-Regular, sans-serif;
+  --description3-font-size: 16px;
+  --description3-line-height: normal;
+  --description3-font-weight: 400;
+  --description3-font-style: normal;
+  --description4-font-family: Inter-Regular, sans-serif;
+  --description4-font-size: 18px;
+  --description4-line-height: normal;
+  --description4-font-weight: 400;
+  --description4-font-style: normal;
+  --button1-font-family: Inter-Bold, sans-serif;
+  --button1-font-size: 18px;
+  --button1-line-height: normal;
+  --button1-font-weight: 700;
+  --button1-font-style: normal;
+
+  /* Effects */
+}
+/* Figma Color Variables of your File */

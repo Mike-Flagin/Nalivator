@@ -1,0 +1,48 @@
+.default-button {
+  background: var(--grey-side, #8f8e94);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  
+  color: var(--whitegrey-background, #f4f5f7);
+  text-align: center;
+  font-family: var(--title2-font-family, "Inter-Bold", sans-serif);
+  font-size: var(--title2-font-size, 18px);
+  font-weight: var(--title2-font-weight, 700);
+}
+.default-button:hover {
+  background: var(--darkblue-main, #1c448e);
+}
+
+
+
+.stroke-button {
+  border-radius: 8px;
+  border-style: solid;
+  border-color: var(--grey-side, #8f8e94);
+  border-width: 2px;
+  padding: 16px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+
+  color: var(--grey-side, #8f8e94);
+  text-align: center;
+  font-family: var(--description4-font-family, "Inter-Regular", sans-serif);
+  font-size: var(--description4-font-size, 18px);
+  font-weight: var(--description4-font-weight, 400);
+}
+
+.stroke-button:hover {
+  border-color: var(--darkblue-main, #1c448e);
+}

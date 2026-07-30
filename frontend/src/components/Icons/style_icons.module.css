@@ -1,0 +1,97 @@
+.menu-burger-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 48px;
+    height: 32px;
+}
+
+.menu-close-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 32px;
+    height: 32px;
+}
+
+.close-icon {
+    color: var(--grey-side, #8f8e94);
+    width: 14px;
+    height: 14px;
+}
+.search-filter-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 24px;
+    height: 24px;
+}
+
+.filter-settings-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 22px;
+    height: 24px;
+}
+
+.add-filter-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 24px;
+    height: 24px;
+}
+
+.more-actions-icon-horizontal {
+    color: var(--grey-side, #8f8e94);
+    width: 16px;
+    height: 4px;
+
+}
+
+.more-actions-icon-vertical {
+    color: var(--black-textcolor, #1a281f);
+    width: 4px;
+    height: 16px;
+}
+
+.edit-details-group {
+    color: var(--black-textcolor, #1a281f);
+    width: 20px;
+    height: 20px;
+}
+
+.delete-item-icon{
+    color: var(--black-textcolor, #1a281f);
+    width: 20px;
+    height: 20px;
+}
+
+.wifi-settings-icon {
+    color: var(--darkblue-main, #1c448e);
+    width: 32px;
+    height: 24px;
+}
+
+.rewind-button-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 15px;
+    height: 17px;
+}
+
+.play-button-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 15px;
+    height: 17px;
+    rotate: 180deg;
+}
+
+.stop-button-icon {
+    color: var(--black-textcolor, #1a281f);
+    width: 12px;
+    height: 12px;
+}
+
+.cheers-icon{
+    color: var(--green-accept, #427654);
+    width: 54px;
+    height: 57px;
+}
+
+.vectorArrow{
+    color: var(--black-textcolor, #1a281f);
+    width: 23px;
+    height: 14px;
+}
+
