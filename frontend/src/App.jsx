@@ -3,6 +3,7 @@ import {useState} from 'react';
 import './App.css'
 import Spinner from "./components/Spinner/Spinner.jsx";
 import Accordion from "./components/Accordion/Accordion.jsx";
+import Dropdown from "./components/Dropdown/Dropdown.jsx";
 
 function App() {
     const [portion, setPortion] = useState(5);
@@ -50,6 +51,12 @@ function App() {
                     step={0.5}
                     onChange={val => setPortion(val)}
                 />/>
+            </section>
+
+            <section id="center">
+                <Dropdown
+                    elementList = {elementList}
+                    />
             </section>
 
         </>
